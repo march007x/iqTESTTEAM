@@ -3,483 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IQ Arena - Brain Puzzle Game</title>
+    <title>The Deep Insight - Neural Arena</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #f0f4f8; color: #334155; overflow-x: hidden; }
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --accent-soft: #818cf8;
+            --text-main: #e2e8f0;
+        }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--bg-main); color: var(--text-main); }
         
-        /* Game-style Cards */
-        .game-card { background: #ffffff; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05), 0 8px 0 #e2e8f0; border: 2px solid #e2e8f0; }
+        .glass-panel { background: var(--bg-card); border: 1px solid #334155; border-radius: 24px; }
         
-        /* Game-style Buttons */
-        .btn-game { transition: all 0.1s ease; box-shadow: 0 6px 0 rgba(0,0,0,0.15); border-radius: 16px; font-weight: bold; text-transform: uppercase; }
-        .btn-game:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
-        .btn-game:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: translateY(6px); }
+        .btn-game { 
+            transition: all 0.2s ease; border-radius: 12px; font-weight: 500;
+            box-shadow: 0 4px 0 #0f172a;
+        }
+        .btn-game:active { transform: translateY(3px); box-shadow: 0 1px 0 #0f172a; }
         
-        /* Game Inputs */
-        .input-game { background: #f8fafc; border: 3px solid #e2e8f0; border-radius: 16px; padding: 12px 16px; font-weight: bold; color: #334155; transition: all 0.2s; }
-        .input-game:focus { outline: none; border-color: #3b82f6; background: #ffffff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+        .option-item {
+            cursor: pointer; background: #334155; border: 2px solid transparent; border-radius: 16px;
+            transition: all 0.2s;
+        }
+        .option-item:hover { background: #3d4e66; border-color: #6366f1; }
+        .option-item.selected { background: #475569; border-color: #818cf8; box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
 
-        /* Matrix Puzzle Grid */
-        .matrix-cell { width: 75px; height: 75px; background: #ffffff; border: 3px solid #cbd5e1; border-radius: 12px; display: flex; justify-content: center; align-items: center; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
-        .matrix-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #f1f5f9; padding: 12px; border-radius: 20px; border: 3px solid #e2e8f0; }
-        
-        /* Selectable Options */
-        .option-card { cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 3px solid #e2e8f0; border-radius: 20px; background: #ffffff; box-shadow: 0 6px 0 #e2e8f0; }
-        .option-card:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 10px 0 #cbd5e1; border-color: #cbd5e1; }
-        .option-card:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #cbd5e1; }
-        .option-card.selected { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 6px 0 #3b82f6; transform: translateY(-2px); }
+        /* Matrix SVG Styles */
+        .matrix-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #334155; padding: 15px; border-radius: 20px; }
+        .matrix-box { aspect-ratio: 1; background: #f8fafc; border-radius: 10px; display: flex; justify-content: center; align-items: center; }
 
-        .page { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
-        .active-page { display: block; opacity: 1; }
-        
-        .loader { border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin: 0 auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .team-blue { color: #2563eb; }
-        .team-pink { color: #db2777; }
-        .bg-team-blue { background-color: #3b82f6; }
-        .bg-team-pink { background-color: #ec4899; }
+        .page { display: none; }
+        .page.active { display: block; animation: smoothIn 0.5s ease-out; }
+        @keyframes smoothIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Lock Screen Overlay - Friendly version */
-        #lock-overlay { backdrop-filter: blur(5px); }
-        .time-warning { color: #ef4444 !important; animation: bounce-slight 1s infinite; }
-        @keyframes bounce-slight { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+<body class="min-h-screen flex flex-col">
 
-    <div id="lock-overlay" class="hidden fixed inset-0 bg-amber-400/95 z-[100] flex flex-col justify-center items-center text-center p-6 border-[12px] border-amber-500">
-        <i class="fa-solid fa-face-dizzy text-7xl text-orange-600 mb-6 animate-bounce"></i>
-        <h1 class="text-4xl md:text-6xl font-black text-white mb-2 drop-shadow-md">ใจเย็นๆ วัยรุ่น!</h1>
-        <div class="bg-white/20 p-4 rounded-2xl mb-8 border-2 border-white/30 max-w-md">
-            <p class="text-orange-900 text-lg font-bold">ระบบตรวจพบคนมั่วคำตอบในทีมของคุณ!</p>
-            <p class="text-orange-800 text-sm mt-1">ทีมของคุณถูกพักเบรกชั่วคราว หายใจเข้าลึกๆ นะ</p>
-        </div>
-        <div class="bg-white text-orange-500 rounded-full w-32 h-32 flex items-center justify-center text-6xl font-black shadow-lg mb-4" id="lock-timer-display">25</div>
-        <p class="text-orange-800 mt-2 font-bold tracking-widest uppercase bg-white/30 px-4 py-1 rounded-full">วินาที</p>
-    </div>
-
-    <header class="p-4 flex justify-between items-center sticky top-0 z-50 bg-white shadow-sm border-b-2 border-slate-200">
+    <header class="p-6 flex justify-between items-center border-b border-slate-800 bg-slate-900/40 backdrop-blur-lg sticky top-0 z-50">
         <div class="flex items-center gap-3">
-            <div class="bg-gradient-to-br from-blue-400 to-indigo-500 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm text-white transform rotate-3">
-                <i class="fa-solid fa-brain text-xl"></i>
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid fa-brain text-white text-sm"></i>
             </div>
-            <h1 class="font-black text-xl text-slate-800 tracking-tight">IQ ARENA <span class="text-blue-500 text-sm ml-1 bg-blue-100 px-2 py-0.5 rounded-full">Party!</span></h1>
+            <span class="font-bold text-lg tracking-tight">DEEP<span class="text-indigo-400">INSIGHT</span></span>
         </div>
-        <div id="timer-container" class="hidden flex items-center gap-2 bg-slate-100 px-5 py-2 rounded-2xl border-2 border-slate-200 shadow-inner">
-            <i class="fa-regular fa-clock text-slate-500 text-lg"></i>
-            <div id="timer" class="font-bold text-slate-700 text-xl font-mono">20:00</div>
+        <div id="timer-ui" class="hidden flex items-center gap-3 bg-slate-800/80 px-5 py-2 rounded-full border border-slate-700">
+            <i class="fa-regular fa-clock text-indigo-400"></i>
+            <span id="timer-val" class="font-mono text-xl font-bold text-indigo-100">30:00</span>
         </div>
     </header>
 
-    <main class="flex-grow w-full max-w-4xl mx-auto p-4 py-8 flex flex-col justify-center relative">
-
-        <section id="page-login" class="page active-page">
-            <div class="game-card p-8 md:p-10 max-w-md mx-auto text-center relative overflow-hidden">
-                <div class="absolute -right-10 -top-10 text-slate-100 text-9xl z-0 transform rotate-12"><i class="fa-solid fa-gamepad"></i></div>
+    <main class="flex-grow flex items-center justify-center p-4">
+        
+        <section id="page-start" class="page active w-full max-w-md">
+            <div class="glass-panel p-10 text-center">
+                <h1 class="text-3xl font-bold mb-4">การประเมินศักยภาพ</h1>
+                <p class="text-slate-400 text-sm mb-10 leading-relaxed">บททดสอบ 30 ข้อ เพื่อวัดระดับความฉลาดทางตรรกะ และวิเคราะห์คุณลักษณะนิสัยเชิงลึก</p>
                 
-                <div class="relative z-10">
-                    <div class="bg-gradient-to-r from-yellow-400 to-orange-400 w-20 h-20 mx-auto rounded-3xl flex items-center justify-center shadow-lg mb-6 transform -rotate-6">
-                        <i class="fa-solid fa-rocket text-white text-4xl"></i>
-                    </div>
-                    <h2 class="text-3xl font-black mb-8 text-slate-800 tracking-tight">สร้างโปรไฟล์</h2>
-                    
-                    <div class="text-left space-y-5 mb-8">
-                        <div>
-                            <label class="text-sm font-bold text-slate-500 block mb-2"><i class="fa-solid fa-user-ninja mr-1"></i> ชื่อผู้เล่น (Nickname)</label>
-                            <input type="text" id="user-name" placeholder="ตั้งชื่อเท่ๆ ของคุณ..." class="input-game w-full">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-sm font-bold text-slate-500 block mb-2"><i class="fa-solid fa-cake-candles mr-1"></i> อายุ</label>
-                                <input type="number" id="user-age" min="10" max="100" value="25" class="input-game w-full text-center">
-                            </div>
-                            <div>
-                                <label class="text-sm font-bold text-slate-500 block mb-2"><i class="fa-solid fa-flag mr-1"></i> ทีม</label>
-                                <select id="team-select" class="input-game w-full cursor-pointer">
-                                    <option value="1" class="font-bold text-blue-600">🔵 Team Blue</option>
-                                    <option value="2" class="font-bold text-pink-600">🔴 Team Pink</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="text-sm font-bold text-slate-500 block mb-2"><i class="fa-solid fa-key mr-1"></i> รหัสห้อง (ถ้ามี)</label>
-                            <input type="text" id="room-id" placeholder="ปล่อยว่างเพื่อสร้างห้องใหม่" class="input-game w-full text-center tracking-widest uppercase text-blue-600">
-                        </div>
-                    </div>
-
-                    <button onclick="joinArena()" class="btn-game w-full bg-blue-500 text-white py-4 text-lg">
-                        เข้าห้องรอเล่น <i class="fa-solid fa-arrow-right ml-2"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <section id="page-lobby" class="page">
-            <div class="game-card p-6 md:p-10 max-w-2xl mx-auto">
-                <div class="text-center mb-8 bg-slate-50 p-6 rounded-3xl border-2 border-slate-100">
-                    <h2 class="text-slate-400 font-bold text-sm uppercase tracking-widest mb-3"><i class="fa-solid fa-door-open mr-1"></i> รหัสเชิญเพื่อน (Room ID)</h2>
-                    <div class="flex items-center justify-center">
-                        <div id="display-room-id" class="text-5xl font-black text-blue-600 tracking-widest select-all drop-shadow-sm">---</div>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-4 font-medium">ส่งรหัสนี้ให้เพื่อนพิมพ์ในหน้าแรกเพื่อเข้าห้องเดียวกัน!</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="bg-blue-50 border-2 border-blue-200 rounded-3xl p-5 relative overflow-hidden">
-                        <div class="absolute -right-4 -bottom-4 text-blue-100 text-7xl z-0"><i class="fa-solid fa-shield-cat"></i></div>
-                        <h3 class="team-blue font-black text-xl text-center border-b-2 border-blue-200 pb-3 mb-4 relative z-10">🔵 Team Blue</h3>
-                        <ul id="lobby-blue-list" class="space-y-3 min-h-[100px] relative z-10"></ul>
-                    </div>
-                    
-                    <div class="bg-pink-50 border-2 border-pink-200 rounded-3xl p-5 relative overflow-hidden">
-                         <div class="absolute -right-4 -bottom-4 text-pink-100 text-7xl z-0"><i class="fa-solid fa-dragon"></i></div>
-                        <h3 class="team-pink font-black text-xl text-center border-b-2 border-pink-200 pb-3 mb-4 relative z-10">🔴 Team Pink</h3>
-                        <ul id="lobby-red-list" class="space-y-3 min-h-[100px] relative z-10"></ul>
-                    </div>
-                </div>
-
-                <div class="text-center">
-                    <button onclick="startGame()" class="btn-game bg-emerald-500 hover:bg-emerald-400 text-white px-12 py-4 text-xl w-full md:w-auto">
-                        <i class="fa-solid fa-play mr-2"></i> ลุยเลย! (Start Game)
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <section id="page-test" class="page">
-             <div class="game-card p-6 md:p-10 relative">
-                
-                <div id="match-tracker" class="mb-8 bg-slate-50 p-5 rounded-3xl border-2 border-slate-200 shadow-inner">
-                    <div class="text-sm text-slate-500 font-bold mb-4 text-center border-b-2 border-slate-200 pb-2"><i class="fa-solid fa-flag-checkered mr-2"></i>ความคืบหน้าของทีม (Live)</div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="text-sm team-blue font-black w-20 flex-shrink-0">Team Blue</div>
-                        <div class="flex-grow bg-slate-200 h-5 rounded-full overflow-hidden shadow-inner relative">
-                            <div id="team1-progress-bar" class="bg-blue-500 h-full w-0 transition-all duration-500 rounded-full relative overflow-hidden">
-                                <div class="absolute inset-0 bg-white/20 w-full h-full" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.2) 10px, rgba(255,255,255,0.2) 20px);"></div>
-                            </div>
-                        </div>
-                        <div class="text-sm team-blue font-bold w-10 text-right"><span id="team1-progress-val">0</span>%</div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="text-sm team-pink font-black w-20 flex-shrink-0">Team Pink</div>
-                        <div class="flex-grow bg-slate-200 h-5 rounded-full overflow-hidden shadow-inner relative">
-                            <div id="team2-progress-bar" class="bg-pink-500 h-full w-0 transition-all duration-500 rounded-full relative overflow-hidden">
-                                <div class="absolute inset-0 bg-white/20 w-full h-full" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.2) 10px, rgba(255,255,255,0.2) 20px);"></div>
-                            </div>
-                        </div>
-                        <div class="text-sm team-pink font-bold w-10 text-right"><span id="team2-progress-val">0</span>%</div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-end mb-6 pb-4 border-b-2 border-slate-100">
+                <div class="space-y-4 mb-10 text-left">
                     <div>
-                        <div class="text-slate-400 font-bold text-sm mb-1">คำถามที่</div>
-                        <h3 class="text-4xl font-black text-slate-800"><span id="q-num" class="text-blue-500">1</span> <span class="text-lg text-slate-400">/ 30</span></h3>
-                    </div>
-                    <div class="w-40">
-                        <div class="flex justify-between text-xs font-bold text-slate-500 mb-2"><span>ส่วนตัว</span><span><span id="progress-val">0</span>%</span></div>
-                        <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden"><div id="progress-bar" class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full w-0 transition-all rounded-full"></div></div>
+                        <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-2 ml-1">Nickname</label>
+                        <input type="text" id="p-name" placeholder="ชื่อของคุณ..." class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 focus:outline-none focus:border-indigo-500 transition-all">
                     </div>
                 </div>
 
-                <div id="question-display" class="flex flex-col items-center w-full min-h-[300px] py-6"></div>
-                
-                <div class="mt-8 flex justify-between items-center pt-2">
-                    <button id="btn-prev" onclick="move(-1)" class="btn-game bg-white border-2 border-slate-200 text-slate-600 px-6 py-3 invisible"><i class="fa-solid fa-angle-left mr-1"></i> ย้อนกลับ</button>
-                    <button id="btn-next" onclick="move(1)" class="btn-game bg-slate-800 hover:bg-slate-700 text-white px-10 py-3 disabled:opacity-30">ข้อต่อไป <i class="fa-solid fa-angle-right ml-1"></i></button>
-                    <button id="btn-finish" onclick="finishTest()" class="btn-game bg-blue-600 text-white px-8 py-3 hidden shadow-[0_6px_0_#1e40af] hover:shadow-[0_4px_0_#1e40af] hover:translate-y-[2px]">ส่งคำตอบ 🚀</button>
+                <button onclick="initGame()" class="btn-game bg-indigo-600 w-full py-4 text-lg text-white shadow-indigo-900/50">
+                    เริ่มการทดสอบ <i class="fa-solid fa-arrow-right-long ml-2"></i>
+                </button>
+            </div>
+        </section>
+
+        <section id="page-test" class="page w-full max-w-4xl">
+            <div class="glass-panel p-6 md:p-12">
+                <div class="flex justify-between items-end mb-10">
+                    <div>
+                        <div id="q-lvl" class="inline-block px-3 py-1 rounded-md text-[10px] font-bold uppercase mb-2">Level: Easy</div>
+                        <h2 class="text-3xl font-black">ข้อที่ <span id="q-num" class="text-indigo-400">1</span>/30</h2>
+                    </div>
+                    <div class="text-right hidden md:block">
+                        <div class="text-[10px] text-slate-500 font-bold uppercase mb-2">Progress</div>
+                        <div class="w-48 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="prog-bar" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="q-area" class="min-h-[350px] flex flex-col items-center justify-center">
+                    </div>
+
+                <div class="flex justify-between items-center mt-12 pt-8 border-t border-slate-800">
+                    <button id="btn-prev" onclick="moveQ(-1)" class="text-slate-500 font-bold hover:text-slate-300 transition-colors opacity-0">
+                        <i class="fa-solid fa-chevron-left mr-2"></i> ก่อนหน้า
+                    </button>
+                    <button id="btn-next" onclick="moveQ(1)" class="btn-game bg-indigo-500 px-12 py-3 text-white disabled:opacity-20" disabled>
+                        ข้อถัดไป <i class="fa-solid fa-chevron-right ml-2"></i>
+                    </button>
+                    <button id="btn-submit" onclick="finishGame()" class="btn-game bg-emerald-600 px-10 py-3 text-white hidden">
+                        ส่งคำตอบ <i class="fa-solid fa-paper-plane ml-2"></i>
+                    </button>
                 </div>
             </div>
         </section>
 
-        <section id="page-result" class="page">
-            
-            <div id="waiting-opponent-ui" class="hidden game-card p-12 text-center max-w-lg mx-auto">
-                <div class="bg-blue-100 w-24 h-24 mx-auto rounded-full flex items-center justify-center mb-6">
-                    <div class="loader border-blue-300 border-t-blue-500 w-12 h-12"></div>
-                </div>
-                <h2 class="text-2xl font-black text-slate-800 mb-2">ส่งกระดาษคำตอบแล้ว!</h2>
-                <p class="text-slate-500 font-medium mb-6">กำลังรอเพื่อนคนอื่นๆ ส่งคำตอบให้ครบ...</p>
-                <div class="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 inline-block">
-                    <div class="text-sm font-bold text-slate-400 mb-1">ส่งแล้ว</div>
-                    <div class="text-2xl font-black text-slate-700"><span id="players-finished" class="text-blue-500">0</span> / <span id="players-total-finish">0</span></div>
-                </div>
-            </div>
-
-            <div id="final-result-ui" class="hidden">
-                <div class="text-center mb-10">
-                    <div class="inline-block bg-yellow-100 p-4 rounded-full mb-4 shadow-sm text-yellow-500 text-4xl"><i class="fa-solid fa-trophy"></i></div>
-                    <h2 class="text-4xl font-black text-slate-800 tracking-tight mb-4">สรุปผลการแข่งขัน</h2>
-                    <div id="winner-announcement" class="text-2xl font-black py-3 px-8 rounded-2xl inline-block shadow-md">---</div>
+        <section id="page-result" class="page w-full max-w-4xl">
+            <div class="glass-panel p-8 md:p-12 overflow-hidden relative">
+                <div class="text-center mb-12">
+                    <div class="text-indigo-400 font-bold text-sm uppercase tracking-widest mb-2">Analysis Complete</div>
+                    <h2 id="res-user" class="text-4xl font-black mb-2">PLAYER</h2>
+                    <p class="text-slate-500">รายงานสรุปผลอัจฉริยภาพและบุคลิกภาพ</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="game-card p-6 text-center border-t-[8px] border-t-blue-500 relative bg-blue-50/50">
-                        <div id="blue-crown" class="hidden absolute -top-8 left-1/2 transform -translate-x-1/2 text-yellow-400 text-6xl drop-shadow-md animate-bounce"><i class="fa-solid fa-crown"></i></div>
-                        <h3 class="team-blue text-2xl font-black mb-2 mt-4">Team Blue</h3>
-                        <div class="text-sm font-bold text-slate-400 mb-2">คะแนน IQ เฉลี่ย</div>
-                        <div id="blue-avg-iq" class="text-7xl font-black team-blue mb-6 drop-shadow-sm">---</div>
-                        <div class="bg-white rounded-2xl p-4 border-2 border-blue-100 shadow-sm"><ul id="blue-members-res" class="space-y-2 text-sm text-left font-bold text-slate-600"></ul></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 text-center">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">IQ Score</div>
+                        <div id="res-iq" class="text-6xl font-black text-indigo-400">--</div>
                     </div>
-                    
-                    <div class="game-card p-6 text-center border-t-[8px] border-t-pink-500 relative bg-pink-50/50">
-                        <div id="red-crown" class="hidden absolute -top-8 left-1/2 transform -translate-x-1/2 text-yellow-400 text-6xl drop-shadow-md animate-bounce"><i class="fa-solid fa-crown"></i></div>
-                        <h3 class="team-pink text-2xl font-black mb-2 mt-4">Team Pink</h3>
-                        <div class="text-sm font-bold text-slate-400 mb-2">คะแนน IQ เฉลี่ย</div>
-                        <div id="red-avg-iq" class="text-7xl font-black team-pink mb-6 drop-shadow-sm">---</div>
-                        <div class="bg-white rounded-2xl p-4 border-2 border-pink-100 shadow-sm"><ul id="red-members-res" class="space-y-2 text-sm text-left font-bold text-slate-600"></ul></div>
+                    <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 text-center">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">Trait</div>
+                        <div id="res-trait" class="text-xl font-bold text-emerald-400">--</div>
+                    </div>
+                    <div class="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 text-center">
+                        <div class="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-widest">Aptitude</div>
+                        <div id="res-apt" class="text-xl font-bold text-purple-400">--</div>
                     </div>
                 </div>
 
-                <div class="game-card p-8 bg-white border-2 border-slate-200">
-                    <h3 class="text-xl font-black text-slate-800 mb-4 pb-3 border-b-2 border-slate-100 flex items-center"><div class="bg-indigo-100 w-10 h-10 rounded-full flex items-center justify-center text-indigo-500 mr-3"><i class="fa-solid fa-user-astronaut"></i></div> วิเคราะห์ผลส่วนตัว</h3>
-                    <div id="personal-report" class="text-slate-600 space-y-3 font-medium text-lg bg-slate-50 p-6 rounded-2xl border-2 border-slate-100"></div>
-                    
-                    <button onclick="document.getElementById('answer-key-section').classList.toggle('hidden')" class="btn-game mt-6 bg-slate-100 border-2 border-slate-200 text-slate-700 px-4 py-3 w-full hover:bg-slate-200">
-                        <i class="fa-solid fa-list-check mr-2"></i> ดูเฉลยคำตอบ (Answer Key)
-                    </button>
-                    
-                    <div id="answer-key-section" class="hidden mt-4 space-y-3 max-h-96 overflow-y-auto pr-2">
-                        </div>
+                <div class="bg-slate-900/50 p-8 rounded-3xl border border-slate-800 mb-10">
+                    <h3 class="font-bold text-slate-300 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-quote-left text-indigo-500"></i> บทวิเคราะห์โดยละเอียด
+                    </h3>
+                    <p id="res-desc" class="text-slate-400 leading-relaxed italic"></p>
+                </div>
+
+                <div class="flex justify-center">
+                    <button onclick="location.reload()" class="btn-game bg-slate-700 px-8 py-3 text-white text-sm">ทดสอบใหม่อีกครั้ง</button>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        const firebaseConfig = {
-          apiKey: "AIzaSyCyWL-jE_pxZnZAzHomhofRMH6uf-6R4rg",
-          authDomain: "my-iq-game.firebaseapp.com",
-          projectId: "my-iq-game",
-          storageBucket: "my-iq-game.firebasestorage.app",
-          messagingSenderId: "73462203278",
-          appId: "1:73462203278:web:ac429d9e38631071d41adf",
-          measurementId: "G-N9GFL75YK3"
+    <script>
+        // --- 🖼 Visual Assets ---
+        const svgAssets = {
+            circle: (c="#1e293b") => `<svg width="40" height="40"><circle cx="20" cy="20" r="15" fill="${c}" /></svg>`,
+            square: (c="#1e293b") => `<svg width="40" height="40"><rect x="5" y="5" width="30" height="30" fill="${c}" /></svg>`,
+            tri: (c="#1e293b") => `<svg width="40" height="40"><polygon points="20,5 35,35 5,35" fill="${c}" /></svg>`,
+            dot: (c="#1e293b") => `<svg width="40" height="40"><circle cx="20" cy="20" r="5" fill="${c}" /></svg>`,
+            wrap: (cells) => `<div class="matrix-container">${cells}</div>`,
+            box: (content) => `<div class="matrix-box">${content}</div>`,
+            q: () => `<div class="matrix-box bg-indigo-100 text-indigo-600 font-black text-xl">?</div>`
         };
-        
-        let appId = 'iq-arena-app';
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        let currentUser = null; let currentRoomId = null; let myTeam = 1; let roomUnsubscribe = null; let totalPlayersInRoom = 0;
 
-        async function initAuth() { try { await signInAnonymously(auth); } catch(e){} }
-        onAuthStateChanged(auth, user => { currentUser = user; });
-        initAuth();
+        // --- 📝 30 Unique Questions (7 Easy, 11 Medium, 12 Hard) ---
+        const questions = [
+            // EASY (7 QUESTIONS)
+            { type: 'logic', lvl: 'Easy', w: 1, text: "2, 4, 6, 8, ... ตัวต่อไปคืออะไร?", opts: ["9", "10", "12", "14"], ans: 1 },
+            { type: 'visual', lvl: 'Easy', w: 1, content: svgAssets.wrap(svgAssets.box(svgAssets.circle()) + svgAssets.box(svgAssets.circle()) + svgAssets.box(svgAssets.circle()) + svgAssets.box(svgAssets.square()) + svgAssets.box(svgAssets.square()) + svgAssets.box(svgAssets.square()) + svgAssets.box(svgAssets.tri()) + svgAssets.box(svgAssets.tri()) + svgAssets.q()), opts: [svgAssets.tri(), svgAssets.circle(), svgAssets.square(), svgAssets.dot()], ans: 0 },
+            { type: 'logic', lvl: 'Easy', w: 1, text: "หากสลับตัวอักษร 'R-A-E-T-W' จะได้คำว่าอะไรในภาษาอังกฤษ?", opts: ["WATER", "WRITE", "TOWER", "TREAT"], ans: 0 },
+            { type: 'math', lvl: 'Easy', w: 1, text: "มีแอปเปิ้ล 12 ลูก ให้เพื่อนไปครึ่งหนึ่ง แล้วซื้อเพิ่มอีก 2 ลูก ตอนนี้มีกี่ลูก?", opts: ["6", "7", "8", "9"], ans: 2 },
+            { type: 'visual', lvl: 'Easy', w: 1, content: svgAssets.wrap(svgAssets.box(svgAssets.dot('#6366f1')) + svgAssets.box(svgAssets.dot('#6366f1')) + svgAssets.q() + svgAssets.box(svgAssets.dot()) + svgAssets.box(svgAssets.dot()) + svgAssets.box(svgAssets.dot()) + svgAssets.box(svgAssets.dot()) + svgAssets.box(svgAssets.dot()) + svgAssets.box(svgAssets.dot())), opts: [svgAssets.dot('#f43f5e'), svgAssets.dot('#6366f1'), svgAssets.dot('#10b981'), svgAssets.dot('#000')], ans: 1 },
+            { type: 'phil', lvl: 'Easy', w: 2, text: "คุณเชื่อว่า 'ความพยายาม' สำคัญกว่า 'พรสวรรค์' หรือไม่?", opts: ["เชื่ออย่างยิ่ง (Growth Mindset)", "เชื่อบางส่วน", "พรสวรรค์สำคัญกว่า", "สำคัญพอกัน"], trait: 'mindset' },
+            { type: 'phil', lvl: 'Easy', w: 2, text: "เมื่อเห็นคนทำความผิดเล็กน้อยแต่ไม่ได้ทำให้ใครเดือดร้อน คุณจะ...?", opts: ["ตักเตือนตามกฎ", "ปล่อยผ่านไป", "ทำตามสถานการณ์", "เก็บมาคิดกังวล"], trait: 'compliance' },
 
-        // --- 📊 Friendly SVG Generators (Softer lines, rounder caps) ---
-        const svg = { 
-            wrap: (c) => `<div class="matrix-grid">${c}</div>`, 
-            cell: (i) => `<div class="matrix-cell">${i||''}</div>`, 
-            empty: () => `<div class="matrix-cell bg-slate-100"><i class="fa-solid fa-question text-slate-300 text-3xl"></i></div>`,
-            arrow: (d) => `<svg width="60" height="60" style="transform:rotate(${d}deg)"><line x1="10" y1="30" x2="50" y2="30" stroke="#334155" stroke-width="6" stroke-linecap="round"/><polygon points="50,30 35,18 35,42" fill="#334155" stroke-linejoin="round"/></svg>`,
-            lines: (v, h, d1, d2) => { let s = `<svg width="60" height="60">`; if(v) s += `<line x1="30" y1="10" x2="30" y2="50" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"/>`; if(h) s += `<line x1="10" y1="30" x2="50" y2="30" stroke="#3b82f6" stroke-width="8" stroke-linecap="round"/>`; if(d1) s += `<line x1="15" y1="15" x2="45" y2="45" stroke="#ec4899" stroke-width="8" stroke-linecap="round"/>`; if(d2) s += `<line x1="45" y1="15" x2="15" y2="45" stroke="#ec4899" stroke-width="8" stroke-linecap="round"/>`; return s + `</svg>`; },
-            dots: (n) => { let d=`<svg width="60" height="60">`; const p=[[30,30],[15,15],[45,45],[15,45],[45,15],[15,30],[45,30],[30,15],[30,45]]; for(let i=0;i<n&&i<p.length;i++) d+=`<circle cx="${p[i][0]}" cy="${p[i][1]}" r="6" fill="#f59e0b"/>`; return d+='</svg>'; }
-        };
-        
-        const masterQuestions = [
-            { type: 'visual', visual: svg.wrap(svg.cell(svg.arrow(0)) + svg.cell(svg.arrow(90)) + svg.cell(svg.arrow(180)) + svg.cell(svg.arrow(45)) + svg.cell(svg.arrow(135)) + svg.cell(svg.arrow(225)) + svg.cell(svg.arrow(90)) + svg.cell(svg.arrow(180)) + svg.empty()), options: [svg.arrow(270), svg.arrow(315), svg.arrow(0), svg.arrow(45)], answer: 0, weight: 1.5 },
-            { type: 'visual', visual: svg.wrap(svg.cell(svg.lines(1,0,0,0)) + svg.cell(svg.lines(0,1,0,0)) + svg.cell(svg.lines(1,1,0,0)) + svg.cell(svg.lines(0,0,1,0)) + svg.cell(svg.lines(0,0,0,1)) + svg.cell(svg.lines(0,0,1,1)) + svg.cell(svg.lines(1,1,0,0)) + svg.cell(svg.lines(0,1,0,0)) + svg.empty()), options: [svg.lines(1,1,1,1), svg.lines(1,0,0,0), svg.lines(0,1,0,0), svg.lines(1,1,0,0)], answer: 1, weight: 2.0 },
-            { type: 'visual', visual: svg.wrap(svg.cell(svg.dots(3)) + svg.cell(svg.dots(2)) + svg.cell(svg.dots(4)) + svg.cell(svg.dots(4)) + svg.cell(svg.dots(3)) + svg.cell(svg.dots(5)) + svg.cell(svg.dots(5)) + svg.cell(svg.dots(2)) + svg.empty()), options: [svg.dots(6), svg.dots(7), svg.dots(8), svg.dots(9)], answer: 2, weight: 3.0 },
-            { type: 'logic', text: "ถ้าเครื่องทำแพนเค้ก 5 เครื่อง ทำแพนเค้กได้ 5 ชิ้นใน 5 นาที แล้วถ้าใช้ 100 เครื่อง ทำ 100 ชิ้น จะใช้เวลากี่นาที?", options: ["1 นาที", "5 นาที", "20 นาที", "100 นาที"], answer: 1, weight: 4.5 },
-            { type: 'logic', text: "ถ้า 'แมวทุกตัวชอบกินปลา' และ 'นิกกี้ชอบกินปลา' เราสรุปได้ว่าอะไร?", options: ["นิกกี้คือแมว", "นิกกี้อาจจะไม่ใช่แมวก็ได้", "ปลาชอบนิกกี้", "นิกกี้คือหมา"], answer: 1, weight: 2.5 }
+            // MEDIUM (11 QUESTIONS)
+            { type: 'logic', lvl: 'Medium', w: 3, text: "ถ้านาฬิกาบอกเวลา 15:15 น. เข็มสั้นกับเข็มยาวทำมุมกันกี่องศา? (โดยประมาณ)", opts: ["0°", "7.5°", "15°", "22.5°"], ans: 1 },
+            { type: 'math', lvl: 'Medium', w: 3, text: "ตัวเลขที่หายไป: 1, 4, 9, 16, 25, ...", opts: ["30", "36", "42", "49"], ans: 1 },
+            { type: 'logic', lvl: 'Medium', w: 3, text: "ถ้านก 3 ตัว จับหนอน 3 ตัว ได้ใน 3 นาที นก 100 ตัว จะจับหนอน 100 ตัว ได้ในกี่นาที?", opts: ["1 นาที", "3 นาที", "33 นาที", "100 นาที"], ans: 1 },
+            { type: 'visual', lvl: 'Medium', w: 3, content: svgAssets.wrap(svgAssets.box("1A") + svgAssets.box("2B") + svgAssets.box("3C") + svgAssets.box("4D") + svgAssets.box("5E") + svgAssets.box("6F") + svgAssets.box("7G") + svgAssets.box("8H") + svgAssets.q()), opts: ["9I", "9J", "10I", "10J"], ans: 0 },
+            { type: 'math', lvl: 'Medium', w: 3, text: "พ่อมีอายุเป็น 3 เท่าของลูก อีก 10 ปีข้างหน้า พ่อจะมีอายุเป็น 2 เท่าของลูก ปัจจุบันลูกอายุกี่ปี?", opts: ["5", "10", "15", "20"], ans: 1 },
+            { type: 'logic', lvl: 'Medium', w: 3, text: "สมชายรวยกว่าสมหญิง สมหญิงรวยกว่าสมบัตื สมควรจนกว่าสมหญิง ใครจนที่สุด?", opts: ["สมหญิง", "สมบัติ", "สมควร", "สรุปไม่ได้"], ans: 3 },
+            { type: 'math', lvl: 'Medium', w: 3, text: "ไม้เบสบอลและลูกบอลรวมกันราคา 110 บาท ไม้เบสบอลราคาแพงกว่าลูกบอล 100 บาท ลูกบอลราคากี่บาท?", opts: ["5 บาท", "10 บาท", "15 บาท", "20 บาท"], ans: 0 },
+            { type: 'phil', lvl: 'Medium', w: 4, text: "ถ้าต้องเลือกช่วยคน 10 คนที่คนในสังคมเกลียด กับช่วยคนดี 1 คน คุณจะเลือก...?", opts: ["ช่วย 10 คน (ประโยชน์นิยม)", "ช่วย 1 คน (คุณธรรมนิยม)", "ไม่เลือก", "ช่วยคนที่อยู่ใกล้สุด"], trait: 'utilitarian' },
+            { type: 'phil', lvl: 'Medium', w: 4, text: "คุณคิดว่าความหมายของชีวิตคืออะไร?", opts: ["ความสำเร็จ", "ความสุข", "การเรียนรู้", "ความว่างเปล่า"], trait: 'existential' },
+            { type: 'phil', lvl: 'Medium', w: 4, text: "หาก AI มีความรู้สึกเหมือนมนุษย์ เราควรให้สิทธิพลเมืองแก่ AI หรือไม่?", opts: ["ควร", "ไม่ควร", "ควรบางส่วน", "เป็นไปไม่ได้"], trait: 'future' },
+            { type: 'phil', lvl: 'Medium', w: 4, text: "โลกที่ไม่มีสงครามแต่ไร้เสรีภาพ กับโลกที่มีสงครามแต่มีเสรีภาพ คุณเลือกอะไร?", opts: ["โลกสงบสุข", "โลกเสรี", "ยอมรับทั้งสอง", "ไม่เลือกทั้งคู่"], trait: 'liberty' },
+
+            // HARD (12 QUESTIONS)
+            { type: 'math', lvl: 'Hard', w: 5, text: "เลขชุดนี้คืออะไร: 2, 3, 5, 7, 11, 13, ...", opts: ["15", "17", "19", "21"], ans: 1 },
+            { type: 'logic', lvl: 'Hard', w: 5, text: "ปลาทุกตัวว่ายน้ำได้ สิ่งที่ว่ายน้ำได้คือสัตว์น้ำ สรุปได้ว่าปลาคือสัตว์น้ำหรือไม่?", opts: ["ใช่ แน่นอน", "ไม่ใช่", "อาจจะใช่", "สรุปไม่ได้จากข้อมูล"], ans: 0 },
+            { type: 'math', lvl: 'Hard', w: 5, text: "ถ้า x + y = 10 และ x^2 - y^2 = 20 แล้ว x - y เท่ากับเท่าใด?", opts: ["1", "2", "3", "4"], ans: 1 },
+            { type: 'visual', lvl: 'Hard', w: 5, content: "🧩 รูปแบบซ้อนทับ: สี่เหลี่ยมหมุน 45 องศาทุกขั้นตอน และสีเปลี่ยนจากเข้มไปอ่อน... ขั้นตอนที่ 9 คืออะไร?", opts: ["สี่เหลี่ยมขาวตั้งตรง", "สี่เหลี่ยมขาวเอียง", "สี่เหลี่ยมดำตั้งตรง", "สี่เหลี่ยมดำเอียง"], ans: 1 },
+            { type: 'logic', lvl: 'Hard', w: 5, text: "ในเกาะที่มีแต่คนโกหกกับคนพูดจริง นาย A บอกว่า 'นาย B เป็นคนพูดจริง' แต่นาย B บอกว่า 'เราทั้งคู่เป็นคนโกหก' ใครคือคนพูดจริง?", opts: ["นาย A", "นาย B", "ทั้งคู่โกหก", "ไม่มีคนพูดจริง"], ans: 3 },
+            { type: 'math', lvl: 'Hard', w: 5, text: "มีลูกเต๋า 2 ลูก ทอยพร้อมกัน โอกาสที่จะได้แต้มรวมกันเท่ากับ 7 คือเท่าใด?", opts: ["1/6", "1/12", "1/36", "7/36"], ans: 0 },
+            { type: 'logic', lvl: 'Hard', w: 5, text: "ถ้า 'มังกรทั้งหมดพ่นไฟได้' และ 'สิ่งที่พ่นไฟได้มีปีก' สรุปได้ว่ามังกรมีปีกหรือไม่?", opts: ["มีปีกแน่นอน", "อาจไม่มีปีก", "ไม่มีปีก", "ข้อมูลไม่พอ"], ans: 0 },
+            { type: 'math', lvl: 'Hard', w: 5, text: "พื้นที่ของวงกลมที่ล้อมรอบสี่เหลี่ยมจัตุรัสที่มีด้านยาว 2 หน่วย คือเท่าใด?", opts: ["2π", "4π", "π", "8π"], ans: 0 },
+            { type: 'phil', lvl: 'Hard', w: 6, text: "ถ้าความสุขของคนส่วนใหญ่ แลกมาด้วยความทรมานของเด็กเพียงคนเดียว คุณยอมรับระบบนี้ไหม?", opts: ["ไม่ยอมรับ (สิทธิมนุษยชน)", "ยอมรับถ้าคุ้มค่า", "พยายามหาทางอื่น", "เฉยๆ"], trait: 'omelas' },
+            { type: 'phil', lvl: 'Hard', w: 6, text: "คุณจะเลือกมีชีวิตที่เป็นอมตะแต่ต้องเห็นคนที่รักจากไป หรือมีชีวิตสั้นๆ แต่มีความสุข?", opts: ["อมตะ", "ชีวิตสั้น", "ไม่มีอันไหนดี", "ตามโชคชะตา"], trait: 'mortality' },
+            { type: 'phil', lvl: 'Hard', w: 6, text: "หากคุณสามารถลบความทรงจำที่เจ็บปวดได้ทั้งหมด คุณจะลบหรือไม่?", opts: ["ลบเพื่อเริ่มใหม่", "ไม่ลบ (มันคือบทเรียน)", "ลบบางส่วน", "ไม่แน่ใจ"], trait: 'experience' },
+            { type: 'phil', lvl: 'Hard', w: 6, text: "ความจริงใจที่ทำร้ายความรู้สึก กับการโกหกที่ทำให้คนสบายใจ อะไรดีกว่ากัน?", opts: ["ความจริงใจ", "โกหกสีขาว", "นิ่งเฉย", "แล้วแต่คน"], trait: 'integrity' }
         ];
-        
-        while(masterQuestions.length < 30) { masterQuestions.push({...masterQuestions[Math.floor(Math.random()*masterQuestions.length)]}); }
 
-        let myQuestions = []; let userName = ""; let current = 0; let answers = []; let timeSpent = []; let questionStartTime = 0;
-        let spamCount = 0; let teamLockInterval = null; let timeLeft = 20 * 60; let testTimerInterval;
+        // --- 🕹 Game logic ---
+        let cur = 0;
+        let answers = new Array(30).fill(null);
+        let time = 30 * 60;
+        let timerInt;
 
-        function showPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page')); document.getElementById(id).classList.add('active-page'); }
-
-        window.joinArena = async function() {
-            if(!currentUser) return alert("กำลังโหลดข้อมูล แป๊บเดียวนะ...");
-            userName = document.getElementById('user-name').value.trim() || "Player" + Math.floor(Math.random()*999);
-            myTeam = parseInt(document.getElementById('team-select').value);
-            let inputRoomId = document.getElementById('room-id').value.trim().toUpperCase();
-            currentRoomId = inputRoomId || Math.random().toString(36).substring(2, 8).toUpperCase();
-            
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'matches', currentRoomId);
-            const docSnap = await getDoc(roomRef);
-            
-            if(docSnap.exists()) {
-                if(docSnap.data().status !== 'waiting') return alert("ว้า! ห้องนี้เริ่มเล่นไปแล้ว ลองสร้างห้องใหม่นะ");
-                await updateDoc(roomRef, { [`players.${currentUser.uid}`]: { name: userName, team: myTeam, progress: 0, iq: 0, finished: false } });
-            } else {
-                await setDoc(roomRef, { status: 'waiting', team1LockUntil: 0, team2LockUntil: 0, players: { [currentUser.uid]: { name: userName, team: myTeam, progress: 0, iq: 0, finished: false } } });
-            }
-
-            document.getElementById('display-room-id').innerText = currentRoomId;
-            showPage('page-lobby'); listenToMatch();
-        };
-
-        window.startGame = async function() { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', currentRoomId), { status: 'playing', startedAt: Date.now() }); }
-
-        function listenToMatch() {
-            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'matches', currentRoomId);
-            roomUnsubscribe = onSnapshot(roomRef, async (docSnap) => {
-                if(!docSnap.exists()) return;
-                const data = docSnap.data();
-                const players = data.players || {};
-                totalPlayersInRoom = Object.keys(players).length;
-
-                if(data.status === 'waiting' && document.getElementById('page-lobby').classList.contains('active-page')) {
-                    let b='', r='', avatarColors = ['bg-blue-100 text-blue-500','bg-green-100 text-green-500','bg-yellow-100 text-yellow-500','bg-purple-100 text-purple-500'];
-                    Object.values(players).forEach((p, index) => {
-                        let c = avatarColors[index % avatarColors.length];
-                        let item = `<li class="flex items-center gap-3 bg-white p-2 rounded-xl border-2 border-slate-100 shadow-sm"><div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold ${c}"><i class="fa-solid fa-user-astronaut"></i></div><span class="font-bold text-slate-700">${p.name}</span></li>`;
-                        p.team===1 ? b+=item : r+=item;
-                    });
-                    document.getElementById('lobby-blue-list').innerHTML = b; document.getElementById('lobby-red-list').innerHTML = r;
-                }
-
-                if(data.status === 'playing' && document.getElementById('page-lobby').classList.contains('active-page')) {
-                    setupRandomizedQuestions(); startTestFlow();
-                }
-
-                if(data.status === 'playing') { handleTeamLock(data['team' + myTeam + 'LockUntil'] || 0); }
-
-                if(data.status === 'playing' || data.status === 'finished') {
-                    let t1=0, c1=0, t2=0, c2=0, fin=0;
-                    Object.values(players).forEach(p => {
-                        if(p.team===1) { t1+=p.progress; c1++; }
-                        if(p.team===2) { t2+=p.progress; c2++; }
-                        if(p.finished) fin++;
-                    });
-                    if(c1>0) { let p=Math.round(t1/c1); document.getElementById('team1-progress-bar').style.width=p+'%'; document.getElementById('team1-progress-val').innerText=p; }
-                    if(c2>0) { let p=Math.round(t2/c2); document.getElementById('team2-progress-bar').style.width=p+'%'; document.getElementById('team2-progress-val').innerText=p; }
-                    document.getElementById('players-finished').innerText = fin; document.getElementById('players-total-finish').innerText = totalPlayersInRoom;
-
-                    if(fin >= totalPlayersInRoom && totalPlayersInRoom > 0 && data.status !== 'finished') { if(myTeam === 1) updateDoc(roomRef, { status: 'finished' }); }
-                    if(data.status === 'finished' && document.getElementById('page-result').classList.contains('active-page')) { displayTeamResult(data); }
-                }
-            });
+        function initGame() {
+            if(!document.getElementById('p-name').value) return alert("โปรดใส่ชื่อของคุณ");
+            document.getElementById('page-start').classList.remove('active');
+            document.getElementById('page-test').classList.add('active');
+            document.getElementById('timer-ui').classList.remove('hidden');
+            startTimer();
+            renderQ();
         }
 
-        function handleTeamLock(lockTs) {
-            const now = Date.now();
-            if(lockTs > now) {
-                document.getElementById('lock-overlay').classList.remove('hidden');
-                if(!teamLockInterval) {
-                    teamLockInterval = setInterval(() => {
-                        let remaining = Math.ceil((lockTs - Date.now()) / 1000);
-                        if(remaining <= 0) { clearInterval(teamLockInterval); teamLockInterval = null; document.getElementById('lock-overlay').classList.add('hidden'); } 
-                        else { document.getElementById('lock-timer-display').innerText = remaining; }
-                    }, 1000);
-                }
-            } else { document.getElementById('lock-overlay').classList.add('hidden'); if(teamLockInterval) { clearInterval(teamLockInterval); teamLockInterval = null; } }
-        }
-
-        async function triggerTeamLockdown() { await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', currentRoomId), { ['team' + myTeam + 'LockUntil']: Date.now() + 25000 }); }
-
-        function setupRandomizedQuestions() {
-            myQuestions = masterQuestions.map(q => {
-                let opts = [...q.options]; let ansString = opts[q.answer];
-                for(let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
-                return { ...q, options: opts, answer: opts.indexOf(ansString) };
-            });
-            for(let i = myQuestions.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [myQuestions[i], myQuestions[j]] = [myQuestions[j], myQuestions[i]]; }
-            answers = new Array(myQuestions.length).fill(null); timeSpent = new Array(myQuestions.length).fill(0);
-        }
-
-        window.startTestFlow = function() {
-            showPage('page-test'); document.getElementById('timer-container').classList.remove('hidden');
-            testTimerInterval = setInterval(() => {
-                if(timeLeft <= 0) return window.finishTest();
-                timeLeft--; const m = Math.floor(timeLeft/60), s = (timeLeft%60).toString().padStart(2,'0');
-                const timerEl = document.getElementById('timer'); timerEl.innerText = `${m}:${s}`;
-                if(timeLeft < 300) timerEl.classList.add('time-warning');
+        function startTimer() {
+            timerInt = setInterval(() => {
+                time--;
+                let m = Math.floor(time / 60), s = time % 60;
+                document.getElementById('timer-val').innerText = `${m}:${s < 10 ? '0'+s : s}`;
+                if(time <= 0) finishGame();
             }, 1000);
-            renderQuestion();
-        };
-
-        function renderQuestion() {
-            questionStartTime = Date.now(); const q = myQuestions[current];
-            document.getElementById('q-num').innerText = current + 1;
-            const pct = Math.round((current/myQuestions.length)*100);
-            document.getElementById('progress-bar').style.width = `${pct}%`; document.getElementById('progress-val').innerText = pct;
-            updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', currentRoomId), { [`players.${currentUser.uid}.progress`]: pct });
-            
-            let content = q.type === 'visual' ? `<div class="mb-8 p-6 bg-white rounded-3xl shadow-sm border-2 border-slate-100 pointer-events-none">${q.visual}</div>` : `<div class="mb-10 text-xl md:text-2xl font-bold text-center max-w-2xl px-8 py-10 bg-white rounded-3xl border-4 border-blue-100 shadow-sm text-slate-700">${q.text}</div>`;
-            content += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">`;
-            q.options.forEach((opt, i) => {
-                const sel = answers[current] === i ? 'selected' : 'text-slate-600';
-                content += `<button onclick="setAnswer(${i})" class="option-card ${sel} p-5 flex items-center justify-center min-h-[90px] font-bold text-lg">
-                    ${q.type==='visual'?`<div class="pointer-events-none">${opt}</div>` : `<span>${opt}</span>`}
-                </button>`;
-            });
-            document.getElementById('question-display').innerHTML = content + `</div>`;
-            
-            document.getElementById('btn-prev').style.visibility = current > 0 ? 'visible' : 'hidden';
-            if(current === myQuestions.length - 1) { document.getElementById('btn-next').classList.add('hidden'); document.getElementById('btn-finish').classList.remove('hidden'); document.getElementById('btn-finish').disabled = answers[current] === null; } 
-            else { document.getElementById('btn-next').classList.remove('hidden'); document.getElementById('btn-finish').classList.add('hidden'); document.getElementById('btn-next').disabled = answers[current] === null; }
         }
 
-        window.setAnswer = function(i) { 
-            let spentMs = Date.now() - questionStartTime; timeSpent[current] += spentMs;
-            if(spentMs < 2000) { spamCount++; if(spamCount >= 3) { triggerTeamLockdown(); spamCount = 0; } } else { spamCount = 0; }
-            answers[current] = i; renderQuestion(); 
-        };
-        
-        window.move = function(dir) { current += dir; renderQuestion(); };
-        
-        window.finishTest = async function() {
-            clearInterval(testTimerInterval); document.getElementById('timer-container').classList.add('hidden');
-            let rawScore = 0; let totalWeight = 0; let totalTimeMs = 0;
-            myQuestions.forEach((q, i) => { totalWeight += q.weight; totalTimeMs += timeSpent[i];
-                if(answers[i] === q.answer) { let bonus = 0; let sec = timeSpent[i] / 1000; if(sec < 15) bonus = q.weight * 0.15; else if (sec > 60) bonus = -(q.weight * 0.05); rawScore += (q.weight + bonus); } 
-            });
-            let age = parseInt(document.getElementById('user-age').value) || 25; if(age < 16 || age > 55) rawScore *= 1.05;
-            if(totalTimeMs < 120000 && answers.length >= 30) { rawScore = 0; }
-            let zScore = (rawScore - (totalWeight * 0.45)) / (totalWeight * 0.15); let iq = Math.round(100 + (zScore * 15)); iq = Math.max(60, Math.min(160, iq));
-            
-            let keyHtml = '';
-            myQuestions.forEach((q, i) => {
-                let isC = answers[i] === q.answer;
-                let icon = isC ? '<div class="bg-green-100 text-green-500 w-6 h-6 rounded-full flex items-center justify-center mr-2"><i class="fa-solid fa-check text-xs"></i></div>' : '<div class="bg-red-100 text-red-500 w-6 h-6 rounded-full flex items-center justify-center mr-2"><i class="fa-solid fa-xmark text-xs"></i></div>';
-                keyHtml += `<div class="bg-slate-50 p-3 rounded-xl border-2 ${isC ? 'border-green-200' : 'border-red-200'} flex justify-between items-center text-sm font-bold text-slate-600 mb-2">
-                    <div class="flex items-center">${icon} ข้อที่ ${i+1}</div> <span><i class="fa-regular fa-clock text-slate-400 mr-1"></i> ${(timeSpent[i] / 1000).toFixed(1)} วิ</span>
+        function renderQ() {
+            const q = questions[cur];
+            document.getElementById('q-num').innerText = cur + 1;
+            document.getElementById('q-lvl').innerText = `Level: ${q.lvl}`;
+            document.getElementById('q-lvl').className = `inline-block px-3 py-1 rounded-md text-[10px] font-bold uppercase mb-2 ${q.lvl==='Easy'?'bg-emerald-500/20 text-emerald-400':q.lvl==='Medium'?'bg-amber-500/20 text-amber-400':'bg-rose-500/20 text-rose-400'}`;
+            document.getElementById('prog-bar').style.width = `${((cur + 1) / 30) * 100}%`;
+
+            let html = '';
+            if(q.type === 'visual') html = `<div class="mb-10 scale-125">${q.content}</div>`;
+            else html = `<div class="text-2xl font-bold text-center mb-10 px-6 leading-relaxed text-slate-200">${q.text}</div>`;
+
+            html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">`;
+            q.opts.forEach((opt, i) => {
+                const sel = answers[cur] === i ? 'selected' : '';
+                html += `<div onclick="select(${i})" class="option-item ${sel} p-5 flex items-center gap-4">
+                    <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-bold text-indigo-400 border border-slate-700">${String.fromCharCode(65+i)}</div>
+                    <div class="text-sm font-medium">${opt}</div>
                 </div>`;
             });
-            document.getElementById('answer-key-section').innerHTML = keyHtml;
+            html += `</div>`;
+            document.getElementById('q-area').innerHTML = html;
 
-            let cat = iq >= 130 ? '🧠 อัจฉริยะ (Genius)' : iq >= 115 ? '🚀 เก่งมาก (Superior)' : iq >= 90 ? '🌟 มาตรฐาน (Average)' : '🌱 ค่อยๆฝึกไปนะ';
-            document.getElementById('personal-report').innerHTML = `
-                <div class="flex justify-between border-b-2 border-slate-200 pb-2"><span class="text-slate-400">ระดับสมอง:</span> <span class="font-bold text-indigo-500">${cat}</span></div>
-                <div class="flex justify-between border-b-2 border-slate-200 py-2"><span class="text-slate-400">IQ สุทธิ:</span> <span class="font-black text-2xl text-blue-600">${iq}</span></div>
-                <div class="flex justify-between py-2"><span class="text-slate-400">เวลาที่ใช้ไป:</span> <span class="font-bold text-slate-700">${Math.round(totalTimeMs/1000)} วินาที</span></div>
-            `;
+            document.getElementById('btn-prev').style.opacity = cur > 0 ? '1' : '0';
+            if(cur === 29) {
+                document.getElementById('btn-next').classList.add('hidden');
+                document.getElementById('btn-submit').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-submit').classList.add('hidden');
+            }
+            document.getElementById('btn-next').disabled = answers[cur] === null;
+        }
 
-            showPage('page-result'); document.getElementById('waiting-opponent-ui').classList.remove('hidden');
-            updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', currentRoomId), { [`players.${currentUser.uid}.progress`]: 100, [`players.${currentUser.uid}.finished`]: true, [`players.${currentUser.uid}.iq`]: iq });
-        };
+        window.select = (i) => { answers[cur] = i; renderQ(); };
+        window.moveQ = (d) => { cur += d; renderQ(); };
 
-        function displayTeamResult(data) {
-            document.getElementById('waiting-opponent-ui').classList.add('hidden'); document.getElementById('final-result-ui').classList.remove('hidden');
-            const players = data.players || {}; let t1Sum=0, c1=0, h1='', t2Sum=0, c2=0, h2='';
-            Object.values(players).forEach(p => {
-                let li = `<li class="flex justify-between items-center border-b-2 border-slate-100 pb-2 pt-2"><span>${p.name}</span> <span class="bg-slate-100 px-3 py-1 rounded-lg text-slate-700">${p.iq}</span></li>`;
-                if(p.team===1) { t1Sum+=p.iq; c1++; h1+=li; } if(p.team===2) { t2Sum+=p.iq; c2++; h2+=li; }
+        function finishGame() {
+            clearInterval(timerInt);
+            let score = 0, totalW = 0, pChoices = [];
+            questions.forEach((q, i) => {
+                totalW += q.w;
+                if(q.type !== 'phil' && answers[i] === q.ans) score += q.w;
+                if(q.type === 'phil') pChoices.push(answers[i]);
             });
-            const avg1 = c1>0 ? Math.round(t1Sum/c1) : 0; const avg2 = c2>0 ? Math.round(t2Sum/c2) : 0;
-            document.getElementById('blue-avg-iq').innerText = avg1; document.getElementById('red-avg-iq').innerText = avg2;
-            document.getElementById('blue-members-res').innerHTML = h1 || '<li class="text-slate-400 text-center py-2">ไม่มีผู้เล่น</li>'; 
-            document.getElementById('red-members-res').innerHTML = h2 || '<li class="text-slate-400 text-center py-2">ไม่มีผู้เล่น</li>';
 
-            const winEl = document.getElementById('winner-announcement');
-            if(avg1 > avg2) { document.getElementById('blue-crown').classList.remove('hidden'); winEl.innerText = "🎉 TEAM BLUE ชนะแคมเปญนี้!"; winEl.className = "text-2xl font-black py-3 px-8 rounded-2xl inline-block bg-blue-500 text-white shadow-[0_6px_0_#1d4ed8]"; } 
-            else if (avg2 > avg1) { document.getElementById('red-crown').classList.remove('hidden'); winEl.innerText = "🎉 TEAM PINK ชนะแคมเปญนี้!"; winEl.className = "text-2xl font-black py-3 px-8 rounded-2xl inline-block bg-pink-500 text-white shadow-[0_6px_0_#be185d]"; } 
-            else { winEl.innerText = "🤝 เสมอกันเป๊ะ!"; winEl.className = "text-2xl font-black py-3 px-8 rounded-2xl inline-block bg-slate-500 text-white shadow-[0_6px_0_#334155]"; }
+            // IQ Calc
+            let iq = Math.round(85 + (score / (totalW - 22)) * 75); // Simplified weight
+            iq = Math.min(160, Math.max(70, iq));
+
+            // Result Analysis
+            let trait = "The Architect";
+            let apt = "Logical Reasoning";
+            let desc = "คุณมีทักษะในการวิเคราะห์ความสัมพันธ์ของข้อมูลที่ซับซ้อนได้ดีเยี่ยม";
+
+            if(pChoices[0] === 0) { trait = "Rational Idealist"; desc += " และคุณมักจะตัดสินใจโดยยึดหลักจริยธรรมที่ส่งผลดีต่อคนส่วนใหญ่."; }
+            else { trait = "Independent Thinker"; desc += " และคุณเป็นคนที่มีความเป็นตัวของตัวเองสูง ยึดถือความจริงมากกว่าสิ่งอื่น."; }
+
+            if(score > 30) apt = "Abstract Mastery";
+            else if (score > 15) apt = "Systematic Thinking";
+            else apt = "Practical Logic";
+
+            document.getElementById('res-user').innerText = document.getElementById('p-name').value;
+            document.getElementById('res-iq').innerText = iq;
+            document.getElementById('res-trait').innerText = trait;
+            document.getElementById('res-apt').innerText = apt;
+            document.getElementById('res-desc').innerText = desc;
+
+            document.getElementById('page-test').classList.remove('active');
+            document.getElementById('page-result').classList.add('active');
+            document.getElementById('timer-ui').classList.add('hidden');
         }
     </script>
 </body>
